@@ -1,26 +1,38 @@
-import React, { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { useDebouncedCallback } from "use-debounce";
+import { fetchPosts } from "../../services/fetchPosts";
 
 export default function App() {
-  const [text, setText] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   setText(event.target.value);
-  // };
+  const { data: posts, isFetching } = useQuery({
+    queryKey: ["posts", searchQuery],
+    queryFn: () => fetchPosts(searchQuery),
+    placeholderData: keepPreviousData,
+  });
 
-  const handleChange = useDebouncedCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => setText(event.target.value),
+  const updateSearchQuery = useDebouncedCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value),
     1000,
   );
 
-  useEffect(() => {
-    console.log(`Make HTTP request with: ${text}`);
-  }, [text]);
-
   return (
     <>
-      <input type="text" defaultValue={text} onChange={handleChange} />
-      <p>Text value: {text}</p>
+      <input
+        type="text"
+        defaultValue={searchQuery}
+        onChange={updateSearchQuery}
+        placeholder="Search posts"
+      />
+      {isFetching && <div>Loading posts...</div>}
+      {posts && (
+        <ul>
+          {posts.map((post) => (
+            <li key={post.id}>{post.title}</li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }
